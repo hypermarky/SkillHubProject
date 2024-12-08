@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Your Notifications</h1>
+<h1 class="mb-4">Your Notifications</h1>
 {% if notifications %}
-<ul class="list-group w-50">
+<div class="notifications-container">
     {% for notif in notifications %}
-    <li class="list-group-item d-flex justify-content-between align-items-center {% if not notif.read %}bg-light{% endif %}">
+    <div class="notification-card d-flex justify-content-between align-items-center {% if not notif.read %}unread{% endif %}">
         <div>
             {% if notif.type == 'like' %}
                 <strong>{{ notif.sender.username }}</strong> liked your post.
-                <a href="{{ url_for('profile', user_id=current_user.id) }}#post-{{ notif.post_id }}">View Post</a>
+                <a href="{{ url_for('profile', user_id=current_user.id) }}#post-{{ notif.post_id }}" class="notification-link">View Post</a>
             {% elif notif.type == 'follow' %}
                 <strong>{{ notif.sender.username }}</strong> started following you.
-                <a href="{{ url_for('profile', user_id=notif.sender_id) }}">View Profile</a>
+                <a href="{{ url_for('profile', user_id=notif.sender_id) }}" class="notification-link">View Profile</a>
             {% elif notif.type == 'message' %}
                 <strong>{{ notif.sender.username }}</strong> sent you a message.
-                <a href="{{ url_for('messages_with_user', user_id=notif.sender_id) }}">View Conversation</a>
-            {% endif %}
+                <a href="{{ url_for('fetch_messages', user_id=notif.sender_id) }}">View Conversation</a>
+                {% endif %}
             <br>
             <small class="text-muted">{{ notif.created_at }}</small>
         </div>
@@ -24,10 +24,10 @@
             <button class="btn btn-sm btn-primary">Mark as Read</button>
         </form>
         {% endif %}
-    </li>
+    </div>
     {% endfor %}
-</ul>
+</div>
 {% else %}
-<p>No notifications yet.</p>
+<p class="text-center">No notifications yet.</p>
 {% endif %}
 {% endblock %}

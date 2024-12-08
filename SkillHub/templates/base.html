@@ -1,78 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skillhub</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-4">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('index') }}">Skillhub</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        
-        <div class="collapse navbar-collapse" id="navMenu">
-          <ul class="navbar-nav ms-auto">
-            {% if current_user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">{{ current_user.username }}</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('update_profile') }}">Edit Profile</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('upload') }}">New Post</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-              </li>
-              <li class="nav-item">
-                <!-- Notifications link with unread badge -->
-                {% set unread_count = current_user.received_notifications|selectattr('read', 'equalto', False)|list|length %}
-                <a class="nav-link position-relative" href="{{ url_for('notifications') }}">
-                  Notifications
-                  {% if unread_count > 0 %}
-                  <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">{{ unread_count }}</span>
-                  {% endif %}
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-              </li>
-            {% else %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-              </li>
-            {% endif %}
-          </ul>
-        </div>
-      </div>
-    </nav>
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="mt-2">
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Skillhub</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('upload') }}">Create</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">{{ current_user.username }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item ms-2">
+                        <button class="btn theme-toggle-btn" id="themeToggle">
+                            <span class="theme-icon-light" style="display:none;">🌞</span>
+                            <span class="theme-icon-dark">🌜</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
-          {% endif %}
-        {% endwith %}
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container my-4">
         {% block content %}{% endblock %}
     </div>
-    
-    <!-- Bootstrap JS -->
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

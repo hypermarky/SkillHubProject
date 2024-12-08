@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from config import Config
 from utils.database import db
@@ -32,10 +32,27 @@ with app.app_context():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+from models.user_model import User, Follow
+from flask_login import current_user
+
 @app.route('/')
 def index():
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    return render_template('index.html', posts=posts)
+    search = request.args.get('search', '').strip()
+
+    posts = Post.query.order_by(Post.created_at.desc()).limit(10).all()
+
+    suggested_users = User.query.limit(5).all()  
+
+    trending_skills = [
+        {'skill_name': 'Python', 'popularity': 120},
+        {'skill_name': 'Web Development', 'popularity': 100},
+        {'skill_name': 'Data Science', 'popularity': 90},
+        {'skill_name': 'Graphic Design', 'popularity': 80},
+        {'skill_name': 'UI/UX', 'popularity': 75}
+    ]
+
+    return render_template('index.html', posts=posts, suggested_users=suggested_users, trending_skills=trending_skills)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -52,7 +69,6 @@ def register():
         new_user = User(username=username, email=email)
         new_user.set_password(password)
 
-        # Handle profile picture
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
@@ -139,7 +155,6 @@ def follow_user(user_id):
     current_user.follow(user_to_follow)
     flash(f'You are now following {user_to_follow.username}.', 'success')
 
-    # Create a notification
     if user_to_follow.id != current_user.id:
         new_notification = Notification(
             user_id=user_to_follow.id,
@@ -169,22 +184,19 @@ def unfollow_user(user_id):
 @app.route('/profile/<int:user_id>/followers')
 def profile_followers(user_id):
     user = User.query.get_or_404(user_id)
-    # Get a list of users who follow the given user
-    followers = user.get_followers()  # returns a list of User objects
+    followers = user.get_followers() 
     return render_template('followers.html', user=user, followers=followers)
 
 @app.route('/profile/<int:user_id>/following')
 def profile_following(user_id):
     user = User.query.get_or_404(user_id)
-    # Get a list of users that this user is following
-    following = user.get_following()  # returns a list of User objects
+    following = user.get_following()  
     return render_template('following.html', user=user, following=following)
 
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
-    # Ensure that the current user is the owner of the post
     if post.user_id != current_user.id:
         flash("You are not authorized to delete this post.", "danger")
         return redirect(url_for('profile', user_id=current_user.id))
@@ -206,10 +218,9 @@ def like_post(post_id):
     db.session.add(new_like)
     db.session.commit()
 
-    # Create a notification for the post owner
     if post.user_id != current_user.id:
         new_notification = Notification(
-            user_id=post.user_id,  # the owner of the post
+            user_id=post.user_id,  
             sender_id=current_user.id,
             type='like',
             post_id=post.id
@@ -260,31 +271,32 @@ def delete_comment(comment_id):
     flash('Comment deleted.', 'info')
     return redirect(request.referrer or url_for('index'))
 
+@app.route('/messages')
+@login_required
+def messages():
+    chat_users = User.query.join(
+        Message,
+        (Message.sender_id == User.id) | (Message.receiver_id == User.id)
+    ).filter(
+        (Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id),
+        User.id != current_user.id
+    ).distinct().all()
+    return render_template('messages.html', chat_users=chat_users)
+
+
+
 @app.route('/messages/<int:user_id>')
 @login_required
-def messages_with_user(user_id):
+def fetch_messages(user_id):
     other_user = User.query.get_or_404(user_id)
-
-    # Check if current_user is following the other_user
-    if not current_user.is_following(other_user):
-        flash("You must follow this user to message them.", "warning")
-        return redirect(url_for('profile', user_id=other_user.id))
-
-    # Retrieve the conversation (both directions)
     conversation = Message.query.filter(
-        ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user.id)) |
-        ((Message.sender_id == other_user.id) & (Message.receiver_id == current_user.id))
+        ((Message.sender_id == current_user.id) & (Message.receiver_id == user_id)) |
+        ((Message.sender_id == user_id) & (Message.receiver_id == current_user.id))
     ).order_by(Message.created_at.asc()).all()
+    return render_template('partials/chat_box.html', other_user=other_user, conversation=conversation)
 
-    # Check friendship status and message limits
-    friends = current_user.is_friends_with(other_user)
-    message_count_from_current = Message.query.filter_by(sender_id=current_user.id, receiver_id=other_user.id).count()
 
-    return render_template('messages.html', 
-                           other_user=other_user, 
-                           conversation=conversation,
-                           friends=friends,
-                           message_count_from_current=message_count_from_current)
+
 
 @app.route('/send_message/<int:user_id>', methods=['POST'])
 @login_required
@@ -293,42 +305,30 @@ def send_message(user_id):
     content = request.form.get('message_content', '').strip()
 
     if not content:
-        flash("Message cannot be empty.", "warning")
-        return redirect(url_for('messages_with_user', user_id=other_user.id))
+        return jsonify({'error': 'Message content cannot be empty'}), 400
 
-    # Must follow the other user to send a message
     if not current_user.is_following(other_user):
-        flash("You must follow this user to message them.", "warning")
-        return redirect(url_for('profile', user_id=other_user.id))
+        return jsonify({'error': 'You must follow this user to message them'}), 403
 
     friends = current_user.is_friends_with(other_user)
     message_count_from_current = Message.query.filter_by(sender_id=current_user.id, receiver_id=other_user.id).count()
 
     if not friends and message_count_from_current >= 3:
-        flash("You have reached the maximum of 3 messages. You must be friends (mutual following) to send more.", "danger")
-        return redirect(url_for('messages_with_user', user_id=other_user.id))
+        return jsonify({'error': 'Message limit reached. Become friends to send more messages.'}), 403
 
     new_message = Message(sender_id=current_user.id, receiver_id=other_user.id, content=content)
     db.session.add(new_message)
     db.session.commit()
 
-    # Create a notification for the receiver of the message
-    notification = Notification(
-        user_id=other_user.id,
-        sender_id=current_user.id,
-        type='message',
-        message_id=new_message.id
-    )
-    db.session.add(notification)
-    db.session.commit()
+    return jsonify({
+        'content': new_message.content,
+        'created_at': new_message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+    })
 
-    flash("Message sent!", "success")
-    return redirect(url_for('messages_with_user', user_id=other_user.id))
 
 @app.route('/notifications')
 @login_required
 def notifications():
-    # Get all notifications for current_user
     user_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
     return render_template('notifications.html', notifications=user_notifications)
 
@@ -356,6 +356,41 @@ def add_skill():
         flash('Skill added successfully!', 'success')
         return redirect(url_for('profile', user_id=current_user.id))
     return render_template('skill_form.html')
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        # Profile settings
+        bio = request.form.get('bio', '').strip()
+        profile_pic = request.files.get('profile_pic')
+
+        # Privacy Settings
+        profile_visibility = request.form.get('profile_visibility')
+
+        # Post Settings
+        allow_comments = request.form.get('allow_comments') == 'on'
+        comment_permission = request.form.get('comment_permission')
+        post_visibility = request.form.get('post_visibility')
+
+        # Update user attributes
+        current_user.bio = bio
+        if profile_pic:
+            from werkzeug.utils import secure_filename
+            filename = secure_filename(profile_pic.filename)
+            profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            current_user.profile_pic = filename
+
+        current_user.profile_visibility = profile_visibility
+        current_user.allow_comments = allow_comments
+        current_user.comment_permission = comment_permission
+        current_user.post_visibility = post_visibility
+
+        db.session.commit()
+        flash("Settings updated successfully!", "success")
+        return redirect(url_for('settings'))
+
+    return render_template('settings.html', user=current_user)
 
 @app.route('/update_profile', methods=['GET', 'POST'])
 @login_required

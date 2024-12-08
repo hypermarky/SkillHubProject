@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex flex-wrap messages-page">
-    <!-- Left side: List of users -->
-    <div class="users-list bg-light p-3" style="min-width: 250px; flex: 1;">
-        <h4 class="fw-bold">Chats</h4>
+<div class="messages-page d-flex">
+    <!-- Left side: Chat list -->
+    <div class="chat-list border-end">
+        <h4 class="p-3">Chats</h4>
         <ul class="list-group">
             {% for user in chat_users %}
-            <li class="list-group-item d-flex align-items-center chat-tab" data-chat-user-id="{{ user.id }}">
-                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+            <li class="list-group-item chat-tab d-flex align-items-center" data-chat-user-id="{{ user.id }}">
+                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic rounded-circle me-3">
                 <span class="chat-user-name">{{ user.username }}</span>
             </li>
             {% endfor %}
@@ -15,9 +15,9 @@
     </div>
 
     <!-- Right side: Chat box -->
-    <div class="chat-box flex-grow-1 p-3" style="min-width: 300px;">
-        <div id="chatContent" class="bg-white rounded p-3 shadow-sm" style="min-height: 400px;">
-            <h5 class="text-muted text-center">Select a user to start chatting</h5>
+    <div class="chat-box flex-fill">
+        <div id="chatContent">
+            <h5 class="text-muted text-center mt-5">Select a user to start chatting</h5>
         </div>
     </div>
 </div>
@@ -30,13 +30,13 @@
         chatTabs.forEach(tab => {
             tab.addEventListener("click", () => {
                 const userId = tab.dataset.chatUserId;
-
                 fetch(`/messages/${userId}`)
                     .then(response => response.text())
                     .then(html => {
                         chatContent.innerHTML = html;
                         document.querySelector(".chat-box").classList.add("chat-box-open");
-                    });
+                    })
+                    .catch(error => console.error("Error fetching chat:", error));
             });
         });
     });

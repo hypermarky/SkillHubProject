@@ -1,34 +1,189 @@
+/* Global Styles */
 body {
-    background-color: #f9f9f9;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+a {
+    text-decoration: none;
+    color: var(--link-color);
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+}
+
+/* Theme Variables */
+:root {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --link-color: #0d6efd;
+    --link-hover-color: #0b5ed7;
+    --card-bg-color: #ffffff;
+    --card-border-color: #dee2e6;
+    --btn-bg-color: #f8f9fa;
+    --btn-text-color: #212529;
+    --btn-hover-bg-color: #e9ecef;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e1e1e1;
+    --link-color: #90caf9;
+    --link-hover-color: #42a5f5;
+    --card-bg-color: #1e1e1e;
+    --card-border-color: #373737;
+    --btn-bg-color: #2e2e2e;
+    --btn-text-color: #e1e1e1;
+    --btn-hover-bg-color: #3e3e3e;
+}
+
+/* Navbar */
+.navbar {
+    position: sticky; /* Ensures the navbar sticks to the top */
+    top: 0; /* Aligns it to the top of the page */
+    z-index: 1030; /* Ensures it stays above other elements */
+    background-color: var(--card-bg-color); /* Dynamic background for themes */
+    border-bottom: 1px solid var(--card-border-color); /* Optional border */
+    transition: background-color 0.3s, border-color 0.3s; /* Smooth transition */
+    padding: 0.5rem 1rem; /* Adjust padding if necessary */
 }
 
 .navbar-brand {
     font-weight: bold;
+    color: var(--link-color);
 }
 
-.card-text {
-    white-space: pre-wrap;
+.navbar-brand:hover {
+    color: var(--link-hover-color);
 }
 
-
-
-header nav a {
-    margin: 0 10px;
-    text-decoration: none;
-    color: #333;
+.nav-link {
+    color: var(--text-color);
+    transition: color 0.3s;
 }
 
-header nav a:hover {
-    text-decoration: underline;
+.nav-link:hover {
+    color: var(--link-hover-color);
 }
 
-ul {
-    list-style-type: none;
-    padding: 0;
+/* Cards */
+.card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
-ul li {
-    background: #eee;
-    margin: 5px 0;
-    padding: 5px;
+.card-title {
+    color: var(--text-color);
+}
+
+.card-footer {
+    background-color: var(--card-bg-color);
+    border-top: 1px solid var(--card-border-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Buttons */
+.btn-outline-secondary {
+    background-color: var(--btn-bg-color);
+    color: var(--btn-text-color);
+    border: 1px solid var(--card-border-color);
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--btn-hover-bg-color);
+    color: var(--text-color);
+}
+
+.container {
+    margin-top: 60px; /* Adjust based on the height of your navbar */
+}
+
+/* Input Fields */
+.form-control {
+    background-color: var(--card-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--card-border-color);
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.form-control:focus {
+    background-color: var(--btn-hover-bg-color);
+    color: var(--text-color);
+    border-color: var(--link-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Messages Page */
+.messages-page {
+    display: flex;
+    gap: 1rem;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+.users-list {
+    background-color: var(--card-bg-color);
+    border-right: 1px solid var(--card-border-color);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.chat-tab {
+    padding: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+.chat-tab:hover {
+    background-color: var(--btn-hover-bg-color);
+}
+
+.chat-user-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.75rem;
+}
+
+.chat-box {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg-color);
+    border-left: 1px solid var(--card-border-color);
+    overflow: hidden;
+}
+
+#chatContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .messages-page {
+        flex-direction: column;
+    }
+
+    .users-list {
+        border-right: none;
+        border-bottom: 1px solid var(--card-border-color);
+        height: auto;
+    }
+
+    .chat-box {
+        border-left: none;
+    }
 }

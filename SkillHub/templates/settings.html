@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="mb-4">Settings</h1>
+<div class="row">
+  <div class="col-md-3">
+    <div class="nav flex-column nav-pills" id="settings-tabs" role="tablist" aria-orientation="vertical">
+      <button class="nav-link active" id="post-settings-tab" data-bs-toggle="pill" data-bs-target="#post-settings" type="button" role="tab" aria-controls="post-settings" aria-selected="true">
+        Post Settings
+      </button>
+      <button class="nav-link" id="privacy-settings-tab" data-bs-toggle="pill" data-bs-target="#privacy-settings" type="button" role="tab" aria-controls="privacy-settings" aria-selected="false">
+        Privacy Settings
+      </button>
+      <button class="nav-link" id="user-settings-tab" data-bs-toggle="pill" data-bs-target="#user-settings" type="button" role="tab" aria-controls="user-settings" aria-selected="false">
+        User Settings
+      </button>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="tab-content" id="settings-tabs-content">
+        
+        <div class="tab-pane fade show active" id="post-settings" role="tabpanel" aria-labelledby="post-settings-tab">
+          <h2 class="mb-3">Post Settings</h2>
+          <div class="mb-3">
+            <label class="form-label">Who can see my posts?</label>
+            <select name="post_visibility" class="form-select">
+              <option value="everyone" {% if user.post_visibility == 'everyone' %}selected{% endif %}>Everyone</option>
+              <option value="followers" {% if user.post_visibility == 'followers' %}selected{% endif %}>Only followers</option>
+              <option value="friends" {% if user.post_visibility == 'friends' %}selected{% endif %}>Only friends</option>
+            </select>
+          </div>
+
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" name="allow_comments" id="allow_comments" {% if user.allow_comments %}checked{% endif %}>
+            <label class="form-check-label" for="allow_comments">Allow comments on my posts</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Who can comment?</label>
+            <select name="comment_permission" class="form-select">
+              <option value="everyone" {% if user.comment_permission == 'everyone' %}selected{% endif %}>Everyone</option>
+              <option value="friends" {% if user.comment_permission == 'friends' %}selected{% endif %}>Only friends</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="tab-pane fade" id="privacy-settings" role="tabpanel" aria-labelledby="privacy-settings-tab">
+          <h2 class="mb-3">Privacy Settings</h2>
+          <div class="mb-3">
+            <label class="form-label">Who can see my profile?</label>
+            <select name="profile_visibility" class="form-select">
+              <option value="public" {% if user.profile_visibility == 'public' %}selected{% endif %}>Everyone</option>
+              <option value="followers" {% if user.profile_visibility == 'followers' %}selected{% endif %}>Only followers</option>
+              <option value="friends" {% if user.profile_visibility == 'friends' %}selected{% endif %}>Only friends</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="tab-pane fade" id="user-settings" role="tabpanel" aria-labelledby="user-settings-tab">
+          <h2 class="mb-3">User Settings</h2>
+          <div class="mb-3">
+            <label class="form-label">Profile Picture</label><br>
+            {% if user.profile_pic %}
+            <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" alt="Current Profile Picture" style="width:100px; height:100px; object-fit:cover; border-radius:50%;">
+            {% endif %}
+            <input type="file" name="profile_pic" class="form-control mt-2">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bio</label>
+            <textarea name="bio" class="form-control" rows="3">{{ user.bio }}</textarea>
+          </div>
+        </div>
+        
+      </div>
+      <button type="submit" class="btn btn-primary mt-4">Save Settings</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

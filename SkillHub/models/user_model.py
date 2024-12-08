@@ -12,6 +12,16 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     bio = db.Column(db.Text, nullable=True)
     profile_pic = db.Column(db.String(255), nullable=True)
+    # Privacy Settings
+    # e.g., 'public', 'followers_only', 'friends_only'
+    profile_visibility = db.Column(db.String(50), default='public')
+    # Post Settings
+    # Allow comments: True/False
+    allow_comments = db.Column(db.Boolean, default=True)
+    # Who can comment: 'everyone', 'friends'
+    comment_permission = db.Column(db.String(50), default='everyone')
+    # Who can see posts: 'everyone', 'followers', 'friends'
+    post_visibility = db.Column(db.String(50), default='everyone')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
