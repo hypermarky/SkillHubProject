@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Welcome to Skillhub</h1>
+
+{% if current_user.is_authenticated %}
+<p>Hello, <strong>{{ current_user.username }}</strong>!</p>
+{% else %}
+<p class="mb-4">Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('register') }}">register</a>.</p>
+{% endif %}
+
+<h2 class="mb-4">Recent Posts</h2>
+<div class="row">
+{% for post in posts %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            {% if post.content_image %}
+            <img src="{{ url_for('static', filename='uploads/' ~ post.content_image) }}" class="card-img-top" style="object-fit:cover; height:200px;">
+            {% elif post.content_video %}
+            <video class="w-100" controls>
+              <source src="{{ url_for('static', filename='uploads/' ~ post.content_video) }}">
+            </video>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title"><a href="{{ url_for('profile', user_id=post.user_id) }}">{{ post.user.username }}</a></h5>
+                <p class="card-text">{{ post.content_text }}</p>
+                <small class="text-muted">Posted on {{ post.created_at }}</small>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

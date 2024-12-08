@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Upload a Post</h1>
+<form method="POST" enctype="multipart/form-data" class="w-50">
+    <div class="mb-3">
+        <label class="form-label">Your Thoughts</label>
+        <textarea name="content_text" class="form-control" rows="4" placeholder="Share something..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Upload Image/Video</label>
+        <input type="file" name="file" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-primary">Post</button>
+</form>
+{% endblock %}
