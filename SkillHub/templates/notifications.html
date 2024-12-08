@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Your Notifications</h1>
+{% if notifications %}
+<ul class="list-group w-50">
+    {% for notif in notifications %}
+    <li class="list-group-item d-flex justify-content-between align-items-center {% if not notif.read %}bg-light{% endif %}">
+        <div>
+            {% if notif.type == 'like' %}
+                <strong>{{ notif.sender.username }}</strong> liked your post.
+                <a href="{{ url_for('profile', user_id=current_user.id) }}#post-{{ notif.post_id }}">View Post</a>
+            {% elif notif.type == 'follow' %}
+                <strong>{{ notif.sender.username }}</strong> started following you.
+                <a href="{{ url_for('profile', user_id=notif.sender_id) }}">View Profile</a>
+            {% elif notif.type == 'message' %}
+                <strong>{{ notif.sender.username }}</strong> sent you a message.
+                <a href="{{ url_for('messages_with_user', user_id=notif.sender_id) }}">View Conversation</a>
+            {% endif %}
+            <br>
+            <small class="text-muted">{{ notif.created_at }}</small>
+        </div>
+        {% if not notif.read %}
+        <form action="{{ url_for('mark_notification_read', notification_id=notif.id) }}" method="POST">
+            <button class="btn btn-sm btn-primary">Mark as Read</button>
+        </form>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No notifications yet.</p>
+{% endif %}
+{% endblock %}

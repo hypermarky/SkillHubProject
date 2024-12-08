@@ -29,6 +29,19 @@
                 <a class="nav-link" href="{{ url_for('upload') }}">New Post</a>
               </li>
               <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li class="nav-item">
+                <!-- Notifications link with unread badge -->
+                {% set unread_count = current_user.received_notifications|selectattr('read', 'equalto', False)|list|length %}
+                <a class="nav-link position-relative" href="{{ url_for('notifications') }}">
+                  Notifications
+                  {% if unread_count > 0 %}
+                  <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">{{ unread_count }}</span>
+                  {% endif %}
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
               </li>
             {% else %}
@@ -59,6 +72,7 @@
         {% block content %}{% endblock %}
     </div>
     
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

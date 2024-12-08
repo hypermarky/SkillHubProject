@@ -10,10 +10,34 @@
     {% if user.bio %}
     <p class="text-muted">{{ user.bio }}</p>
     {% endif %}
+
+    <div class="mb-3">
+        <a href="{{ url_for('profile_followers', user_id=user.id) }}" class="text-dark text-decoration-none">
+            <strong>{{ user.get_followers()|length }}</strong> Followers
+        </a> | 
+        <a href="{{ url_for('profile_following', user_id=user.id) }}" class="text-dark text-decoration-none">
+            <strong>{{ user.get_following()|length }}</strong> Following
+        </a>
+    </div>
+
+    {% if current_user.is_authenticated and current_user.id != user.id %}
+        {% if current_user.is_following(user) %}
+        <form action="{{ url_for('unfollow_user', user_id=user.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-outline-danger">Unfollow</button>
+        </form>
+        <a href="{{ url_for('messages_with_user', user_id=user.id) }}" class="btn btn-outline-secondary ms-2">Message</a>
+        {% else %}
+        <form action="{{ url_for('follow_user', user_id=user.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-outline-primary">Follow</button>
+        </form>
+        <!-- Message button triggers a JS alert since not following yet -->
+        <button type="button" class="btn btn-outline-secondary ms-2" onclick="alert('You must be following this person to message them.')">Message</button>
+        {% endif %}
+    {% endif %}
 </div>
 
 <h3>Skills</h3>
-<ul class="list-group mb-4 w-50">
+<ul class="list-group mb-4 w-50 mx-auto">
     {% for skill in skills %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
         {{ skill.skill_name }}
@@ -40,6 +64,61 @@
             <div class="card-body">
                 <p class="card-text">{{ post.content_text }}</p>
                 <small class="text-muted">Posted on {{ post.created_at }}</small>
+                
+                {% if current_user.is_authenticated and current_user.id == post.user_id %}
+                <!-- Delete button for the post owner -->
+                <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" class="mt-2">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+                {% endif %}
+
+                <!-- Like/Unlike Buttons -->
+                <div class="mt-2">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.has_liked(post) %}
+                        <form action="{{ url_for('unlike_post', post_id=post.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-secondary">Unlike ({{ post.like_count() }})</button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('like_post', post_id=post.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Like ({{ post.like_count() }})</button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">{{ post.like_count() }} Likes</span>
+                    {% endif %}
+                </div>
+
+                <!-- Comments Section -->
+                <hr>
+                <h6>Comments ({{ post.comment_count() }})</h6>
+                {% for comment in post.comments %}
+                    <div class="mb-2">
+                        <strong>
+                            <a href="{{ url_for('profile', user_id=comment.user_id) }}" class="text-dark text-decoration-none">
+                                {{ comment.user.username }}
+                            </a>:
+                        </strong>
+                        <span>{{ comment.content }}</span>
+                        <small class="text-muted">on {{ comment.created_at }}</small>
+                        {% if current_user.is_authenticated and current_user.id == comment.user_id %}
+                        <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-link text-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST" class="mt-2">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="comment_content" class="form-control" placeholder="Add a comment..." required>
+                        <button class="btn btn-outline-primary" type="submit">Comment</button>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-muted"><small>Login to comment</small></p>
+                {% endif %}
             </div>
         </div>
     </div>

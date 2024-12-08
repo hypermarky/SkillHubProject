@@ -9,5 +9,11 @@ class Post(db.Model):
     content_image = db.Column(db.String(255), nullable=True)
     content_video = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def like_count(self):
+        return len(self.post_likes)
+
+    def comment_count(self):
+        return len(self.comments)
 
     user = db.relationship("User", backref="posts")

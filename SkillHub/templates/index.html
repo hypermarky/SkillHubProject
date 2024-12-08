@@ -16,14 +16,74 @@
             {% if post.content_image %}
             <img src="{{ url_for('static', filename='uploads/' ~ post.content_image) }}" class="card-img-top" style="object-fit:cover; height:200px;">
             {% elif post.content_video %}
-            <video class="w-100" controls>
+            <video class="w-100" controls style="height:200px; object-fit:cover;">
               <source src="{{ url_for('static', filename='uploads/' ~ post.content_video) }}">
             </video>
             {% endif %}
-            <div class="card-body">
-                <h5 class="card-title"><a href="{{ url_for('profile', user_id=post.user_id) }}">{{ post.user.username }}</a></h5>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">
+                    <a href="{{ url_for('profile', user_id=post.user_id) }}" class="text-dark text-decoration-none">
+                        {{ post.user.username }}
+                    </a>
+                </h5>
                 <p class="card-text">{{ post.content_text }}</p>
-                <small class="text-muted">Posted on {{ post.created_at }}</small>
+                <small class="text-muted mb-2">Posted on {{ post.created_at }}</small>
+                
+                {% if current_user.is_authenticated and current_user.id == post.user_id %}
+                <!-- Delete button for the post owner -->
+                <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" class="mb-2">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+                {% endif %}
+
+                <!-- Like/Unlike Buttons -->
+                <div class="mb-2">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.has_liked(post) %}
+                        <form action="{{ url_for('unlike_post', post_id=post.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-secondary">Unlike ({{ post.like_count() }})</button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('like_post', post_id=post.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Like ({{ post.like_count() }})</button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">{{ post.like_count() }} Likes</span>
+                    {% endif %}
+                </div>
+
+                <!-- Comments Section -->
+                <hr class="mt-auto">
+                <h6>Comments ({{ post.comment_count() }})</h6>
+                <div style="max-height: 150px; overflow-y:auto; margin-bottom:10px;">
+                    {% for comment in post.comments %}
+                        <div class="mb-2">
+                            <strong>
+                                <a href="{{ url_for('profile', user_id=comment.user_id) }}" class="text-dark text-decoration-none">
+                                    {{ comment.user.username }}
+                                </a>:
+                            </strong>
+                            <span>{{ comment.content }}</span>
+                            <small class="text-muted">on {{ comment.created_at }}</small>
+                            {% if current_user.is_authenticated and current_user.id == comment.user_id %}
+                            <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-link text-danger">Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST" class="mt-2">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="comment_content" class="form-control" placeholder="Add a comment..." required>
+                        <button class="btn btn-outline-primary" type="submit">Comment</button>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-muted"><small>Login to comment</small></p>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">{{ user.username }} is Following</h1>
+{% if following %}
+<ul class="list-group w-50">
+    {% for followed_user in following %}
+    <li class="list-group-item d-flex align-items-center">
+        {% if followed_user.profile_pic %}
+        <img src="{{ url_for('static', filename='uploads/' ~ followed_user.profile_pic) }}"
+             class="rounded-circle me-3"
+             style="width:40px; height:40px; object-fit:cover;">
+        {% else %}
+        <img src="{{ url_for('static', filename='images/default_profile.png') }}"
+             class="rounded-circle me-3"
+             style="width:40px; height:40px; object-fit:cover;">
+        {% endif %}
+
+        <a href="{{ url_for('profile', user_id=followed_user.id) }}" class="text-dark text-decoration-none">
+            {{ followed_user.username }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>This user is not following anyone yet.</p>
+{% endif %}
+{% endblock %}

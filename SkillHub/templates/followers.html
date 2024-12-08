@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">{{ user.username }}'s Followers</h1>
+{% if followers %}
+<ul class="list-group w-50">
+    {% for follower in followers %}
+    <li class="list-group-item d-flex align-items-center">
+        {% if follower.profile_pic %}
+        <img src="{{ url_for('static', filename='uploads/' ~ follower.profile_pic) }}"
+             class="rounded-circle me-3"
+             style="width:40px; height:40px; object-fit:cover;">
+        {% else %}
+        <img src="{{ url_for('static', filename='images/default_profile.png') }}"
+             class="rounded-circle me-3"
+             style="width:40px; height:40px; object-fit:cover;">
+        {% endif %}
+
+        <a href="{{ url_for('profile', user_id=follower.id) }}" class="text-dark text-decoration-none">
+            {{ follower.username }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No followers found.</p>
+{% endif %}
+{% endblock %}
