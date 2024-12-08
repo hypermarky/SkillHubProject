@@ -25,7 +25,7 @@ Skillhub is a social platform built with Flask and MySQL where users can showcas
 - **Notifications:**  
   Users receive notifications when someone follows them, likes their post, or sends them a message. Unread notifications are highlighted, and users can mark them as read.
 
-## Technology Stack
+## Tech Stack
 
 - **Backend:**  
   - [Flask](https://flask.palletsprojects.com/) (Python)
@@ -58,7 +58,7 @@ To install all the required dependencies for the project, run the following comm
 pip install -r requirements.txt
 ```
 
-# 4. Setup and Configuration
+# 3. Setup and Configuration
 
 ## Set Up the Database in MySQL
 
@@ -71,7 +71,7 @@ GRANT ALL PRIVILEGES ON skillhub_db.* TO 'skillhub_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-# 5. Running the application 
+# 4. Running the application 
 ## Run the following command in terminal
 ```bash
 python app.py
