@@ -80,44 +80,50 @@ python app.py
 # Project Structure
 ## This is how you want your project folder to look like
 ```arduino
-skillhub/
-    app.py
-    config.py
-    requirements.txt
-    static/
-        css/
-            style.css
-        js/
-            script.js
-        images/
-            default_profile.png
-        uploads/
-    templates/
-        base.html
-        index.html
-        login.html
-        register.html
-        profile.html
-        upload.html
-        skill_form.html
-        followers.html
-        following.html
-        messages.html
-        notifications.html
-    models/
-        __init__.py
-        user_model.py
-        post_model.py
-        skill_model.py
-        follow_model.py
-        like_model.py
-        comment_model.py
-        message_model.py
-        notification_model.py
-    utils/
-        __init__.py
-        database.py
-        helpers.py
+SkillHub/
+  models/
+    __init__.py
+    comment_model.py
+    follow_model.py
+    like_model.py
+    message_model.py
+    notification_model.py
+    post_model.py
+    skill_model.py
+    user_model.py
+  static/
+    css/
+      style.css
+    images/
+      hero-bg.jpg
+    js/
+      script.js
+    uploads/
+    videos/
+  templates/
+    partials/
+      chat_box.html
+    base.html
+    followers.html
+    following.html
+    index.html
+    login.html
+    messages_with_user.html
+    messages.html
+    notifications.html
+    profile.html
+    register.html
+    settings.html
+    skill_form.html
+    update_profile.html
+    upload.html
+  utils/
+  .gitignore
+  app.py
+  config.py
+  requirements.txt
+  README.md
+
 ```
 
 
