@@ -22,23 +22,74 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const chatTabs = document.querySelectorAll(".chat-tab");
-        const chatContent = document.getElementById("chatContent");
 
-        chatTabs.forEach(tab => {
-            tab.addEventListener("click", () => {
-                const userId = tab.dataset.chatUserId;
-
-                fetch(`/messages/${userId}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        chatContent.innerHTML = html;
-                        document.querySelector(".chat-box").classList.add("chat-box-open");
-                    });
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const chatContent = document.getElementById("chatContent");
+    
+            // Attach an event listener to the chat tabs to load chat dynamically
+            const chatTabs = document.querySelectorAll(".chat-tab");
+            chatTabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    const userId = tab.dataset.chatUserId;
+    
+                    fetch(`/messages/${userId}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(response => response.text())
+                        .then(html => {
+                            chatContent.innerHTML = html;
+    
+                            // Automatically scroll to the bottom of the chat
+                            const chatMessages = document.getElementById("chat-messages");
+                            if (chatMessages) {
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            }
+                        })
+                        .catch(error => console.error("Error loading chat:", error));
+                });
+            });
+    
+            // Handle the message form submission dynamically
+            document.addEventListener("submit", function (e) {
+                if (e.target && e.target.id === "message-form") {
+                    e.preventDefault(); // Stop the default form behavior
+    
+                    const form = e.target;
+                    fetch(form.action, {
+                        method: "POST",
+                        body: new FormData(form),
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert(data.error); // Show error message
+                                return;
+                            }
+    
+                            // Append the new message to the chat
+                            const chatMessages = document.getElementById("chat-messages");
+                            if (chatMessages) {
+                                const messageDiv = document.createElement("div");
+                                messageDiv.className = "message-container sent-message";
+                                messageDiv.innerHTML = `
+                                    <div class="message-content">
+                                        <p>${data.content}</p>
+                                        <span class="message-time">${data.timestamp}</span>
+                                    </div>
+                                `;
+                                chatMessages.appendChild(messageDiv);
+                                chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
+                            }
+    
+                            // Clear the input field
+                            form.reset();
+                        })
+                        .catch(error => console.error("Error sending message:", error));
+                }
             });
         });
-    });
-</script>
+    </script>
+
 {% endblock %}

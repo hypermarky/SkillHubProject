@@ -6,7 +6,7 @@
       <h1 class="display-4 fw-bold">Welcome to Skillhub</h1>
       <p class="lead">Showcase your talents, follow interesting people, and discover new skills!</p>
       {% if current_user.is_authenticated %}
-      <a href="{{ url_for('upload') }}" class="btn btn-lg btn-primary mt-3">Create Your First Post</a>
+      <a href="{{ url_for('upload') }}" class="btn btn-lg btn-primary mt-3">Create A Post</a>
       {% else %}
       <a href="{{ url_for('register') }}" class="btn btn-lg btn-primary mt-3">Join Now</a>
       {% endif %}

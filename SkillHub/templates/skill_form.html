@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="mb-4">Add a New Skill</h1>
-<form method="POST" class="w-50">
-    <div class="mb-3">
-        <label class="form-label">Skill Name</label>
-        <input type="text" name="skill_name" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Proficiency (e.g., Beginner, Intermediate, Expert)</label>
-        <input type="text" name="proficiency" class="form-control">
-    </div>
-    <button type="submit" class="btn btn-primary">Add Skill</button>
-</form>
+<div class="container">
+    <h2>Add a Skill</h2>
+    <form method="POST" action="{{ url_for('add_skill') }}">
+        <div class="form-group">
+            <label for="skill_name">Skill Name</label>
+            <input type="text" id="skill_name" name="skill_name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="proficiency">Proficiency (Beginner - Professional)</label>
+            <input type="text" id="proficiency" name="proficiency" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Skill</button>
+    </form>
+</div>
 {% endblock %}

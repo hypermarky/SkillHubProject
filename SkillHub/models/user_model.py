@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from models.follow_model import Follow
 from models.like_model import Like
+from itsdangerous import URLSafeTimedSerializer
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -68,3 +69,4 @@ class User(UserMixin, db.Model):
             return False
         # Both follow each other
         return self.is_following(other_user) and other_user.is_following(self)
+    

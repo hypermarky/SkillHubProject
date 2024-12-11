@@ -12,11 +12,15 @@ from models.like_model import Like
 from models.comment_model import Comment
 from models.message_model import Message
 from models.notification_model import Notification
+from flask_socketio import SocketIO, emit, join_room
+
+
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
-
+socketio = SocketIO(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -31,9 +35,6 @@ with app.app_context():
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-from models.user_model import User, Follow
-from flask_login import current_user
 
 @app.route('/')
 def index():
@@ -117,20 +118,27 @@ def profile(user_id):
 @login_required
 def upload():
     if request.method == 'POST':
-        content_text = request.form.get('content_text')
+        content_text = request.form.get('content_text', '').strip()
         file = request.files.get('file')
-        
+
         content_image = None
         content_video = None
-        
+
+        if not content_text:
+            flash('Post content cannot be empty.', 'warning')
+            return redirect(url_for('upload'))
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file_extension = filename.rsplit('.', 1)[1].lower()
             if file_extension in ['png', 'jpg', 'jpeg', 'gif']:
                 content_image = filename
-            else:
+            elif file_extension in ['mp4', 'mov']:
                 content_video = filename
+            else:
+                flash('Unsupported file type.', 'danger')
+                return redirect(url_for('upload'))
 
         post = Post(user_id=current_user.id, content_text=content_text,
                     content_image=content_image, content_video=content_video)
@@ -138,8 +146,10 @@ def upload():
         db.session.commit()
         flash('Post created successfully!', 'success')
         return redirect(url_for('index'))
-
+    
+    # If GET method, render the upload form
     return render_template('upload.html')
+
 
 @app.route('/follow/<int:user_id>', methods=['POST'])
 @login_required
@@ -200,6 +210,12 @@ def delete_post(post_id):
     if post.user_id != current_user.id:
         flash("You are not authorized to delete this post.", "danger")
         return redirect(url_for('profile', user_id=current_user.id))
+
+    # Delete related likes
+    likes = Like.query.filter_by(post_id=post_id).delete()
+
+    # Delete related notifications
+    notifications = Notification.query.filter_by(post_id=post_id).delete()
 
     db.session.delete(post)
     db.session.commit()
@@ -274,15 +290,90 @@ def delete_comment(comment_id):
 @app.route('/messages')
 @login_required
 def messages():
-    chat_users = User.query.join(
-        Message,
-        (Message.sender_id == User.id) | (Message.receiver_id == User.id)
-    ).filter(
-        (Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id),
-        User.id != current_user.id
-    ).distinct().all()
-    return render_template('messages.html', chat_users=chat_users)
+    chat_users = get_chat_users()
+    # Load the first user as the default conversation
+    first_user = chat_users[0] if chat_users else None
+    conversation = []
+    
+    if first_user:
+        conversation = Message.query.filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == first_user.id)) |
+            ((Message.sender_id == first_user.id) & (Message.receiver_id == current_user.id))
+        ).order_by(Message.created_at.asc()).all()
 
+    return render_template(
+        'messages.html',
+        chat_users=chat_users,
+        other_user=first_user,
+        conversation=conversation
+    )
+
+
+
+
+import logging
+
+@app.route('/send_message/<int:user_id>', methods=['POST'])
+@login_required
+def send_message(user_id):
+    other_user = User.query.get_or_404(user_id)
+    content = request.form.get('message_content', '').strip()
+
+    if not content:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Message content cannot be empty'}), 400
+        flash('Message content cannot be empty.', 'danger')
+        return redirect(url_for('fetch_messages', user_id=user_id))
+
+    # Ensure message sending rules are followed
+    if not current_user.is_following(other_user):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'You must follow this user to message them'}), 403
+        flash('You must follow this user to message them.', 'danger')
+        return redirect(url_for('fetch_messages', user_id=user_id))
+
+    # Check if message limit is exceeded
+    friends = current_user.is_friends_with(other_user)
+    message_count_from_current = Message.query.filter_by(sender_id=current_user.id, receiver_id=other_user.id).count()
+    if not friends and message_count_from_current >= 3:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Message limit reached. Become friends to send more messages.'}), 403
+        flash('Message limit reached. Become friends to send more messages.', 'danger')
+        return redirect(url_for('fetch_messages', user_id=user_id))
+
+    # Create and save the new message
+    new_message = Message(sender_id=current_user.id, receiver_id=other_user.id, content=content)
+    db.session.add(new_message)
+    db.session.commit()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'sender_id': new_message.sender_id,
+            'receiver_id': new_message.receiver_id,
+            'content': new_message.content,
+            'timestamp': new_message.created_at.strftime('%b %d, %Y %I:%M %p')
+        })
+    else:
+        flash('Message sent successfully.', 'success')
+        return redirect(url_for('fetch_messages', user_id=user_id))
+
+
+
+
+
+def get_chat_users():
+    all_users = User.query.join(
+        Message,
+        ((Message.sender_id == User.id) & (Message.receiver_id == current_user.id)) |
+        ((Message.receiver_id == User.id) & (Message.sender_id == current_user.id))
+    ).filter(
+        User.id != current_user.id
+    ).order_by(Message.created_at.desc()).all()
+
+    # Use an OrderedDict to preserve order and uniqueness
+    from collections import OrderedDict
+    unique_users = list(OrderedDict((user.id, user) for user in all_users).values())
+    return unique_users
 
 
 @app.route('/messages/<int:user_id>')
@@ -293,37 +384,16 @@ def fetch_messages(user_id):
         ((Message.sender_id == current_user.id) & (Message.receiver_id == user_id)) |
         ((Message.sender_id == user_id) & (Message.receiver_id == current_user.id))
     ).order_by(Message.created_at.asc()).all()
-    return render_template('partials/chat_box.html', other_user=other_user, conversation=conversation)
+
+    return render_template(
+        'partials/chat_box.html',
+        other_user=other_user,
+        conversation=conversation
+    )
 
 
 
 
-@app.route('/send_message/<int:user_id>', methods=['POST'])
-@login_required
-def send_message(user_id):
-    other_user = User.query.get_or_404(user_id)
-    content = request.form.get('message_content', '').strip()
-
-    if not content:
-        return jsonify({'error': 'Message content cannot be empty'}), 400
-
-    if not current_user.is_following(other_user):
-        return jsonify({'error': 'You must follow this user to message them'}), 403
-
-    friends = current_user.is_friends_with(other_user)
-    message_count_from_current = Message.query.filter_by(sender_id=current_user.id, receiver_id=other_user.id).count()
-
-    if not friends and message_count_from_current >= 3:
-        return jsonify({'error': 'Message limit reached. Become friends to send more messages.'}), 403
-
-    new_message = Message(sender_id=current_user.id, receiver_id=other_user.id, content=content)
-    db.session.add(new_message)
-    db.session.commit()
-
-    return jsonify({
-        'content': new_message.content,
-        'created_at': new_message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-    })
 
 
 @app.route('/notifications')
@@ -350,30 +420,35 @@ def add_skill():
     if request.method == 'POST':
         skill_name = request.form.get('skill_name')
         proficiency = request.form.get('proficiency')
-        skill = Skill(user_id=current_user.id, skill_name=skill_name, proficiency=proficiency)
+        logging.debug(f"Received skill_name: {skill_name}, proficiency: {proficiency}")
+
+        if not skill_name:
+            flash('Skill name cannot be empty.', 'danger')
+            return redirect(url_for('add_skill'))
+
+        skill = Skill(user_id=current_user.id, skill_name=skill_name, proficiency=str(proficiency))
         db.session.add(skill)
         db.session.commit()
+        logging.debug("Skill successfully added to the database.")
         flash('Skill added successfully!', 'success')
         return redirect(url_for('profile', user_id=current_user.id))
+
     return render_template('skill_form.html')
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     if request.method == 'POST':
-        # Profile settings
         bio = request.form.get('bio', '').strip()
         profile_pic = request.files.get('profile_pic')
 
-        # Privacy Settings
+    
         profile_visibility = request.form.get('profile_visibility')
 
-        # Post Settings
         allow_comments = request.form.get('allow_comments') == 'on'
         comment_permission = request.form.get('comment_permission')
         post_visibility = request.form.get('post_visibility')
 
-        # Update user attributes
         current_user.bio = bio
         if profile_pic:
             from werkzeug.utils import secure_filename
@@ -412,4 +487,4 @@ def update_profile():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host='192.168.0.77', port=5001)

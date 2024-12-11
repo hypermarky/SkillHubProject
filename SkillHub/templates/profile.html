@@ -37,6 +37,18 @@
     {% endif %}
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageButtons = document.querySelectorAll('.message-btn');
+        messageButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                const userId = button.getAttribute('data-user-id');
+                window.location.href = "{{ url_for('messages') }}/" + userId;
+            });
+        });
+    });
+    </script>
+
 <h3>Skills</h3>
 <ul class="list-group mb-4 w-50 mx-auto">
     {% for skill in skills %}

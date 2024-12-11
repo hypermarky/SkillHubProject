@@ -9,48 +9,62 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('index') }}">Skillhub</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navMenu">
-                <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('upload') }}">Create</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">{{ current_user.username }}</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                        </li>
-                    {% endif %}
-                    <li class="nav-item ms-2">
-                        <button class="btn theme-toggle-btn" id="themeToggle">
-                            <span class="theme-icon-light" style="display:none;">🌞</span>
-                            <span class="theme-icon-dark">🌜</span>
-                        </button>
-                    </li>
-                </ul>
-            </div>
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Skillhub</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+          <ul class="navbar-nav ms-auto">
+            {% if current_user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">Profile</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('messages') }}">
+                  <i class="far fa-comment-alt"></i> Messages
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('upload') }}">Create</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('notifications') }}">
+                  <i class="far fa-bell"></i> Notifications
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('settings') }}">
+                  <i class="fas fa-cog"></i> Settings
+                </a>
+              </li>
+      
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+              </li>
+            {% endif %}
+            <li class="nav-item ms-2">
+              <button class="btn theme-toggle-btn" id="themeToggle">
+                <span class="theme-icon-light" style="display:none;">🌞</span>
+                <span class="theme-icon-dark">🌜</span>
+              </button>
+            </li>
+          </ul>
         </div>
+      </div>
     </nav>
 
-    <!-- Content -->
     <div class="container my-4">
         {% block content %}{% endblock %}
     </div>
