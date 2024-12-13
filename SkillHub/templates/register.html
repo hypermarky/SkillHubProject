@@ -18,7 +18,7 @@
         <label class="form-label">Profile Picture (optional)</label>
         <input type="file" name="profile_pic" class="form-control">
     </div>
-    <button type="submit" class="btn btn-primary">Register</button>
+    <button type="submit" class="btn btn-primary" href="{{ url_for('login')}}">Register</button>
     <a href="{{ url_for('login') }}" class="btn btn-link">Login</a>
 </form>
 {% endblock %}

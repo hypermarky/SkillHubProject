@@ -25,6 +25,7 @@ from flask_migrate import Migrate
 import re
 
 
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
@@ -32,14 +33,16 @@ migrate = Migrate(app, db)
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-db.metadata.clear()
+login_manager.login_message = "Please log in to access this page."
+login_manager.login_message_category = "info"
+
+
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
-csrf = CSRFProtect(app)
 Talisman(app,
     content_security_policy={
         'default-src': "'self'",
@@ -50,6 +53,7 @@ Talisman(app,
     },
     force_https=True 
 )
+
 # Session configuration
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -58,20 +62,25 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=60)
 )
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
-with app.app_context():
-    # Drop all tables
-    db.drop_all()
-    
-    # Create all tables
+
+@app.before_first_request
+def create_tables():
     db.create_all()
     
     # Create upload directory if it doesn't exist
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
+
+@login_manager.user_loader
+def load_user(user_id):
+    user = User.query.get(int(user_id))
+    if user:
+        app.logger.info(f"User loaded: {user.username}")
+    else:
+        app.logger.warning(f"No user found with ID: {user_id}")
+    return user
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -108,6 +117,10 @@ def check_ban_status():
         logout_user()
         return redirect(url_for('login'))
 
+with app.app_context():
+    db.create_all()
+
+
 def is_password_strong(password):
     if len(password) < 8:
         return False
@@ -122,23 +135,16 @@ def is_password_strong(password):
     return True
 
 @app.route('/register', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
 def register():
     if request.method == 'POST':
+        # Get form data
         username = request.form.get('username').strip()
         email = request.form.get('email').strip()
         password = request.form.get('password')
-        file = request.files.get('profile_pic')
+        profile_pic = request.files.get('profile_pic')
 
-        last_attempt = session.get('last_register_attempt')
-        if last_attempt:
-            time_since_last_attempt = datetime.utcnow() - datetime.strptime(last_attempt, '%Y-%m-%d %H:%M:%S')
-            if time_since_last_attempt < timedelta(minutes=5):
-                remaining_time = 5 - int(time_since_last_attempt.total_seconds() // 60)
-                flash(f'Please wait {remaining_time} minutes before registering again.', 'warning')
-                return redirect(url_for('register'))
-
-        if ' ' in username or len(username) < 3:
+        # Validation
+        if len(username) < 3 or ' ' in username:
             flash('Username must be at least 3 characters long and cannot contain spaces.', 'warning')
             return redirect(url_for('register'))
 
@@ -146,64 +152,72 @@ def register():
             flash('Only Gmail addresses are allowed.', 'warning')
             return redirect(url_for('register'))
 
-        if not is_password_strong(password):
-            flash('Password must be at least 8 characters and contain uppercase, lowercase, numbers, and special characters.', 'warning')
-            return redirect(url_for('register'))
-
         if User.query.filter_by(email=email).first():
             flash('Email already exists.', 'warning')
             return redirect(url_for('register'))
+
         if User.query.filter_by(username=username).first():
             flash('Username already exists.', 'warning')
             return redirect(url_for('register'))
 
+        # Create a new user instance
         new_user = User(username=username, email=email)
-        new_user.set_password(password)
+        new_user.set_password(password)  # Ensure you have this method in your User model
 
-        # File validation
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            new_user.profile_pic = f'static/uploads/{filename}'
-        elif file:
-            flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
+        # Handle profile picture upload
+        if profile_pic:
+            filename = secure_filename(profile_pic.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            profile_pic.save(file_path)
+            new_user.profile_pic = f'{filename}'
+
+        # Add to database
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful. Please log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error saving user: {e}")
+            flash('An error occurred. Please try again.', 'danger')
             return redirect(url_for('register'))
-        else:
-            new_user.profile_pic = 'mark.jpeg'
-
-        db.session.add(new_user)
-        db.session.commit()
-
-        session['last_register_attempt'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-
-        flash('Registration successful. Please log in.', 'success')
-        return redirect(url_for('login'))
 
     return render_template('register.html')
 
 
-
-
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("10 per hour")
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email').strip()
         password = request.form.get('password')
 
         user = User.query.filter_by(email=email).first()
+
         if user and user.check_password(password):
             if user.is_banned:
                 flash("Your account has been banned. Please contact support.", "danger")
                 return redirect(url_for('login'))
-            login_user(user)
+
+            # Log in the user
+            login_user(user, remember=True)  # Set `remember=True` for persistent sessions
+            app.logger.info(f"Login successful for user: {user.username}")
             flash('Login successful.', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Invalid credentials.', 'danger')
+            app.logger.warning(f"Login failed for email: {email}")
+            flash('Invalid email or password.', 'danger')
             return redirect(url_for('login'))
 
     return render_template('login.html')
+
+
+
+@app.route('/debug')
+def debug():
+    from flask_login import current_user
+    return f"Current user: {current_user}, Authenticated: {current_user.is_authenticated}"
+
 
 @app.route('/logout')
 @login_required
@@ -320,6 +334,8 @@ def admin_dashboard():
 
 
 class AdminLog(db.Model):
+    __tablename__ = 'admin_log'
+    __table_args__ = {'extend_existing': True}
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     action = db.Column(db.String(255), nullable=False)
@@ -757,43 +773,57 @@ def is_valid_image(file_path):
 @login_required
 def settings():
     if request.method == 'POST':
+        # Get form data
         bio = request.form.get('bio', '').strip()
         profile_pic = request.files.get('profile_pic')
-
         profile_visibility = request.form.get('profile_visibility')
-
         allow_comments = request.form.get('allow_comments') == 'on'
         comment_permission = request.form.get('comment_permission')
         post_visibility = request.form.get('post_visibility')
 
+        # Update bio and visibility settings
         current_user.bio = bio
-        
-        if profile_pic:
-            if allowed_file(profile_pic.filename): 
-                filename = secure_filename(profile_pic.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                profile_pic.save(file_path)
-                
-                if is_valid_image(file_path):
-                    current_user.profile_pic = f'static/uploads/{filename}'
-                else:
-                    os.remove(file_path)
-                    flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
-                    return redirect(url_for('settings'))
-            else:
-                flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
-                return redirect(url_for('settings'))
-
         current_user.profile_visibility = profile_visibility
         current_user.allow_comments = allow_comments
         current_user.comment_permission = comment_permission
         current_user.post_visibility = post_visibility
 
-        db.session.commit()
-        flash("Settings updated successfully!", "success")
+        # Handle profile picture upload
+        if profile_pic and allowed_file(profile_pic.filename):
+            try:
+                # Generate secure filename and save the file
+                filename = secure_filename(profile_pic.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                profile_pic.save(file_path)
+
+                # Validate the uploaded image
+                if is_valid_image(file_path):
+                    current_user.profile_pic = filename
+                else:
+                    os.remove(file_path)  # Remove invalid file
+                    flash('Invalid image type. Please upload PNG, JPG, JPEG, or GIF.', 'danger')
+                    return redirect(url_for('settings'))
+            except Exception as e:
+                app.logger.error(f"Error saving profile picture: {e}")
+                flash('An error occurred while uploading the profile picture. Please try again.', 'danger')
+                return redirect(url_for('settings'))
+        elif profile_pic:
+            flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
+            return redirect(url_for('settings'))
+
+        # Commit changes to database
+        try:
+            db.session.commit()
+            flash("Settings updated successfully!", "success")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error saving settings: {e}")
+            flash("An error occurred while saving your settings. Please try again.", "danger")
+
         return redirect(url_for('settings'))
 
     return render_template('settings.html', user=current_user)
+
 
 
 @app.route('/update_profile', methods=['GET', 'POST'])
@@ -822,4 +852,4 @@ def ratelimit_handler(e):
     ), 429
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.0.77', port=5001)
+    app.run(debug=True, host='192.168.10.148', port=5001)
