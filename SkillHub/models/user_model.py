@@ -4,6 +4,7 @@ from flask_login import UserMixin
 from models.follow_model import Follow
 from models.like_model import Like
 from itsdangerous import URLSafeTimedSerializer
+import datetime
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -12,17 +13,20 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(300), nullable=False)
     bio = db.Column(db.Text, nullable=True)
-    profile_pic = db.Column(db.String(255), nullable=True)
-    # Privacy Settings
-    # e.g., 'public', 'followers_only', 'friends_only'
+    profile_pic = db.Column(db.String(255), nullable=True, default='static/images/mark.jpeg')
     profile_visibility = db.Column(db.String(50), default='public')
-    # Post Settings
-    # Allow comments: True/False
     allow_comments = db.Column(db.Boolean, default=True)
-    # Who can comment: 'everyone', 'friends'
     comment_permission = db.Column(db.String(50), default='everyone')
-    # Who can see posts: 'everyone', 'followers', 'friends'
     post_visibility = db.Column(db.String(50), default='everyone')
+    last_post_time = db.Column(db.DateTime, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    is_banned = db.Column(db.Boolean, default=False)
+    login_attempts = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
+
+    def __repr__(self):
+        return f"<User {self.username}>"
+
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

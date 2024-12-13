@@ -21,6 +21,22 @@
     <button class="btn btn-primary" type="submit">Search</button>
   </form>
 </div>
+<form>
+  <label for="sort_by">Sort by:</label>
+  <select id="sort_by" name="sort_by" onchange="this.form.submit()">
+      <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Recent</option>
+      <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>Popular</option>
+      <option value="controversial" {% if sort_by == 'controversial' %}selected{% endif %}>Controversial</option>
+  </select>
+</form>
+
+
+
+<div class="posts">
+  {% for post in posts %}
+  {% endfor %}
+</div>
+
 
 <div class="row">
   <div class="col-md-8">
@@ -52,18 +68,41 @@
               {% if current_user.is_authenticated %}
                 {% if current_user.has_liked(post) %}
                 <form action="{{ url_for('unlike_post', post_id=post.id) }}" method="POST" style="display:inline;">
-                  <button type="submit" class="btn btn-sm btn-secondary">Unlike ({{ post.like_count() }})</button>
+                  <button type="submit" class="btn btn-sm btn-secondary"> {{ post.like_count() }} <img src="{{ url_for('static', filename='images/thumbs-up.png') }}" alt="Likes" width="16" height="16" style="vertical-align: middle;"></button>
                 </form>
                 {% else %}
                 <form action="{{ url_for('like_post', post_id=post.id) }}" method="POST" style="display:inline;">
-                  <button type="submit" class="btn btn-sm btn-outline-secondary">Like ({{ post.like_count() }})</button>
+                  <span>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary"> {{ post.like_count() }} <img src="{{ url_for('static', filename='images/thumbs-up.png') }}" alt="Likes" width="16" height="16" style="vertical-align: middle;"></button>
+                  </span>
                 </form>
                 {% endif %}
               {% else %}
-                <span class="badge bg-secondary">{{ post.like_count() }} Likes</span>
+              <span class="badge bg-secondary">
+                {{ post.like_count() }} <img src="{{ url_for('static', filename='images/thumbs-up.png') }}" alt="Likes" width="16" height="16" style="vertical-align: middle;">
+              </span>
               {% endif %}
-              <a href="{{ url_for('profile', user_id=post.user_id) }}#post-{{ post.id }}" class="text-decoration-none">Comments ({{ post.comment_count() }})</a>
+              <a href="{{ url_for('profile', user_id=post.user_id) }}#post-{{ post.id }}" class="text-decoration-none"><img src="{{ url_for('static', filename='images/message-circle-more.png') }}" alt="Messages" width="16" height="16"> {{ post.comment_count() }}</a>
             </div>
+            {% if current_user.is_authenticated %}
+            <div class="card-body">
+              <h6 class="mt-3">Comments</h6>
+              {% if post.comments %}
+                {% for comment in post.comments %}
+                <div class="mb-2">
+                  <strong><a href="{{ url_for('profile', user_id=comment.user.id) }}">{{ comment.user.username }}</a></strong> 
+                  <span>: {{ comment.content }}</span>
+                </div>
+                {% endfor %}
+              {% else %}
+                <p class="text-muted">No comments yet.</p>
+              {% endif %}
+              <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST" class="d-flex">
+                <input type="text" name="content" class="form-control me-2" placeholder="Add a comment..." required>
+                <button type="submit" class="btn btn-sm btn-primary">Post</button>
+              </form>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
@@ -120,3 +159,22 @@
 </div>
 
 {% endblock %}
+
+<script>
+  document.getElementById('sort_by').addEventListener('change', function() {
+    var sort_by = this.value;
+    var posts = document.getElementsByClassName('post');
+
+    Array.from(posts).sort(function(a, b) {
+        if (sort_by === 'recent') {
+            return Date.parse(b.getAttribute('data-date')) - Date.parse(a.getAttribute('data-date'));
+        } else if (sort_by === 'popular') {
+            return parseInt(b.getAttribute('data-likes')) - parseInt(a.getAttribute('data-likes'));
+        } else if (sort_by === 'controversial') {
+            return parseInt(b.getAttribute('data-comments')) - parseInt(a.getAttribute('data-comments'));
+        }
+    }).forEach(function(post) {
+        post.parentNode.appendChild(post);
+    });
+});
+</script>

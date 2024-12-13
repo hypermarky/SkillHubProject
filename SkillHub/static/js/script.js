@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatContent = document.getElementById("chatContent");
     const messageButtons = document.querySelectorAll(".message-btn");
 
-    // Handle dynamic chat loading for chat tabs
     chatTabs.forEach(tab => {
         tab.addEventListener("click", () => {
             const userId = tab.dataset.chatUserId;
@@ -11,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Handle "Message" button from profile page
     messageButtons.forEach(button => {
         button.addEventListener("click", () => {
             const userId = button.dataset.userId;

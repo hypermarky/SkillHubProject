@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Admin Dashboard - Reports</h1>
+
+    {% if reports %}
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Reported By</th>
+                <th>Details</th>
+                <th>Reason</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.id }}</td>
+                <td>{{ report.report_type }}</td>
+                <td>
+                    <a href="{{ url_for('profile', user_id=report.reporter.id) }}">
+                        {{ report.reporter.username }}
+                    </a>
+                </td>
+                <td>
+                    {% if report.report_type == 'user' %}
+                        User: 
+                        <a href="{{ url_for('profile', user_id=report.reported_user_id) }}">
+                            {{ report.reported_user.username }}
+                        </a>
+                    {% elif report.report_type == 'post' %}
+                        Post ID: 
+                        <a href="{{ url_for('profile', user_id=report.reported_post.user_id) }}#post-{{ report.reported_post_id }}">
+                            {{ report.reported_post_id }}
+                        </a>
+                    {% endif %}
+                </td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.created_at }}</td>
+                <td>
+                    <form action="{{ url_for('resolve_report', report_id=report.id) }}" method="POST" style="display:inline;">
+                        <button class="btn btn-success btn-sm" type="submit">Mark Resolved</button>
+                    </form>
+                    <form action="{{ url_for('delete_report', report_id=report.id) }}" method="POST" style="display:inline;">
+                        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No reports found.</p>
+    {% endif %}
+</div>
+{% endblock %}

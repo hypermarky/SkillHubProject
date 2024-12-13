@@ -3,7 +3,7 @@
 from utils.database import db
 from datetime import datetime
 from models.like_model import Like
-from models.comment_model import Comment  # Import the Comment model
+from models.comment_model import Comment
 
 class Post(db.Model):
     __tablename__ = 'posts'
@@ -13,7 +13,7 @@ class Post(db.Model):
     content_image = db.Column(db.String(255), nullable=True)
     content_video = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    skill_id = db.Column(db.Integer, db.ForeignKey('skills.id'))  # New field
+    skill_id = db.Column(db.Integer, db.ForeignKey('skills.id'))
     user = db.relationship("User", backref="posts")
     skill = db.relationship("Skill", backref="posts") 
 
@@ -21,4 +21,4 @@ class Post(db.Model):
         return Like.query.filter_by(post_id=self.id).count()
 
     def comment_count(self):
-        return Comment.query.filter_by(post_id=self.id).count()  # Count comments linked to this post
+        return Comment.query.filter_by(post_id=self.id).count()

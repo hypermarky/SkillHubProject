@@ -6,4 +6,11 @@ cryptography>=2.0.0
 Werkzeug==2.2.2
 flask_mail
 flask-socketio
-flask-socketio eventlet
+python-socketio==5.7.2
+Flask-Limiter==3.3.1
+Flask-WTF==1.1.1
+flask-talisman==1.0.0
+bleach==6.0.0
+python-magic==0.4.27
+Flask-Migrate==4.0.4
+

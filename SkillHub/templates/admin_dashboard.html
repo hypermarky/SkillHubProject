@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+
+    <!-- Analytics Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="card-text display-6">{{ total_users }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total Posts</h5>
+                    <p class="card-text display-6">{{ total_posts }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Flagged Posts</h5>
+                    <p class="card-text display-6">{{ flagged_posts_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <h2 class="mb-3">User Management</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.is_admin %}
+                    <span class="badge bg-primary">Admin</span>
+                    {% else %}
+                    <span class="badge bg-secondary">User</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_banned %}
+                    <span class="badge bg-danger">Banned</span>
+                    {% else %}
+                    <span class="badge bg-success">Active</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form action="{{ url_for('toggle_admin', user_id=user.id) }}" method="POST" style="display:inline;">
+                        <button class="btn btn-sm btn-warning">
+                            {% if user.is_admin %}Revoke Admin{% else %}Grant Admin{% endif %}
+                        </button>
+                    </form>
+                    <form action="{{ url_for('ban_user', user_id=user.id) }}" method="POST" style="display:inline;">
+                        <button class="btn btn-sm btn-danger">
+                            {% if user.is_banned %}Unban{% else %}Ban{% endif %}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="container mt-5">
+        <h1 class="mb-4">Admin Dashboard - Reports</h1>
+    
+        {% if reports %}
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Reported By</th>
+                    <th>Details</th>
+                    <th>Reason</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.id }}</td>
+                    <td>{{ report.report_type }}</td>
+                    <td>
+                        <a href="{{ url_for('profile', user_id=report.reporter.id) }}">
+                            {{ report.reporter.username }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if report.report_type == 'user' %}
+                            User: 
+                            <a href="{{ url_for('profile', user_id=report.reported_user_id) }}">
+                                {{ report.reported_user.username }}
+                            </a>
+                        {% elif report.report_type == 'post' %}
+                            Post ID: 
+                            <a href="{{ url_for('profile', user_id=report.reported_post.user_id) }}#post-{{ report.reported_post_id }}">
+                                {{ report.reported_post_id }}
+                            </a>
+                        {% endif %}
+                    </td>
+                    <td>{{ report.reason }}</td>
+                    <td>{{ report.created_at }}</td>
+                    <td>
+                        <form action="{{ url_for('resolve_report', report_id=report.id) }}" method="POST" style="display:inline;">
+                            <button class="btn btn-success btn-sm" type="submit">Mark Resolved</button>
+                        </form>
+                        <form action="{{ url_for('delete_report', report_id=report.id) }}" method="POST" style="display:inline;">
+                            <button class="btn btn-danger btn-sm" type="submit">Delete Report</button>
+                        </form>
+                        {% if report.report_type == 'user' %}
+                        <form action="{{ url_for('ban_user', user_id=report.reported_user_id) }}" method="POST" style="display:inline;">
+                            <button class="btn btn-warning btn-sm" type="submit">Ban User</button>
+                        </form>
+                        {% elif report.report_type == 'post' %}
+                        <form action="{{ url_for('delete_post_admin', post_id=report.reported_post_id) }}" method="POST" style="display:inline;">
+                            <button class="btn btn-danger btn-sm" type="submit">Delete Post</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No reports found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Activity Logs -->
+    <h2 class="mt-4 mb-3">Admin Logs</h2>
+    <ul class="list-group">
+        {% for log in logs %}
+        <li class="list-group-item">
+            <strong>{{ log.admin.username }}</strong> - {{ log.action }}
+            <span class="text-muted">at {{ log.timestamp }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

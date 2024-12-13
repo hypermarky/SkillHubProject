@@ -1,5 +1,5 @@
 <div class="chat-header d-flex align-items-center border-bottom pb-2 mb-3">
-    <img src="{{ url_for('static', filename='uploads/' ~ other_user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic rounded-circle me-3">
+    <img src="{{ url_for('static', filename='uploads/' ~ other_user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic">
     <h5>{{ other_user.username }}</h5>
 </div>
 <div class="chat-container">
@@ -21,118 +21,44 @@
     </div>
 </div>
 
-<style>
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-        height: 500px; /* Adjust height as needed */
-        border: 1px solid #ddd;
-    }
-    
-    .chat-messages {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .message-container {
-        display: flex;
-        align-items: flex-start;
-        margin-bottom: 10px;
-    }
-    
-    .profile-picture {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 10px;
-        object-fit: cover;
-    }
-    
-    .message-content {
-        max-width: 70%;
-        padding: 10px;
-        border-radius: 10px;
-    }
-    
-    .sent-message {
-        align-self: flex-end;
-        background-color: #e6f2ff;
-    }
-    
-    .received-message {
-        align-self: flex-start;
-        background-color: #f0f0f0;
-    }
-    
-    .message-time {
-        font-size: 0.7em;
-        color: #888;
-        display: block;
-        margin-top: 5px;
-    }
-    
-    .message-input-container {
-        padding: 10px;
-        border-top: 1px solid #ddd;
-    }
-    
-    .message-input-container form {
-        display: flex;
-    }
-    
-    .message-input-container input {
-        flex-grow: 1;
-        margin-right: 10px;
-        padding: 5px;
-    }
-    
-    .no-messages {
-        text-align: center;
-        color: #888;
-    }
-</style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const messageForm = document.getElementById('message-form');
-            const chatMessages = document.getElementById('chat-messages');
-        
-            messageForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-        
-                fetch(this.action, {
-                    method: 'POST',
-                    body: new FormData(this),
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-        
-                    // Create and append new message
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message-container sent-message';
-                    messageDiv.innerHTML = `
-                        <div class="message-content">
-                            <p>${data.content}</p>
-                            <span class="message-time">${data.timestamp}</span>
-                        </div>
-                    `;
-                    chatMessages.appendChild(messageDiv);
-                    chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
-                    messageForm.reset(); // Clear input field
-                })
-                .catch(error => {
-                    console.error('Error sending message:', error);
-                });
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat_box.css') }}">
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageForm = document.getElementById('message-form');
+        const chatMessages = document.getElementById('chat-messages');
+
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message-container sent-message';
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <p>${data.content}</p>
+                        <span class="message-time">${data.timestamp}</span>
+                    </div>
+                `;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                messageForm.reset();
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
             });
         });
-        
-        </script>
+    });
+</script>
