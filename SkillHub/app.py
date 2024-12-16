@@ -14,12 +14,11 @@ from models.message_model import Message
 from models.admin_log import AdminLog
 from models.notification_model import Notification
 from models.report_model import Report
-from flask_socketio import SocketIO, emit, join_room
-from datetime import datetime, time, timedelta
+from flask_socketio import SocketIO
+from datetime import datetime, timedelta
 from sqlalchemy.sql.expression import func
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtect
 from flask_talisman import Talisman
 from flask_migrate import Migrate
 import re
@@ -612,7 +611,7 @@ def unlike_post(post_id):
 @login_required
 def add_comment(post_id):
     post = Post.query.get_or_404(post_id)
-    content = request.form.get('comment_content')
+    content = request.form.get('comment_content', '').strip()
     if not content.strip():
         flash('Comment cannot be empty.', 'warning')
         return redirect(request.referrer or url_for('index'))
@@ -851,5 +850,6 @@ def ratelimit_handler(e):
         retry_after=e.description
     ), 429
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.10.148', port=5001)
+    app.run(debug=True, host='localhost', port=5001)

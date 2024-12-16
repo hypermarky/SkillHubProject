@@ -97,10 +97,13 @@
               {% else %}
                 <p class="text-muted">No comments yet.</p>
               {% endif %}
-              <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST" class="d-flex">
-                <input type="text" name="content" class="form-control me-2" placeholder="Add a comment..." required>
-                <button type="submit" class="btn btn-sm btn-primary">Post</button>
-              </form>
+              <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST" class="mt-2">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="comment_content" class="form-control" placeholder="Add a comment..." required>
+                    <button class="btn btn-outline-primary" type="submit">Comment</button>
+                </div>
+            </form>
+            
             </div>
             {% endif %}
           </div>
