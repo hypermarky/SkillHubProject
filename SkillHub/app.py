@@ -852,4 +852,4 @@ def ratelimit_handler(e):
     ), 429
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.10.148', port=5001)
+    app.run(debug=True, host='localhost', port=5001)
