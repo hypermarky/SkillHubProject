@@ -14,7 +14,6 @@ from models.message_model import Message
 from models.admin_log import AdminLog
 from models.notification_model import Notification
 from models.report_model import Report
-from flask_socketio import SocketIO
 from datetime import datetime, timedelta
 from sqlalchemy.sql.expression import func
 from flask_limiter import Limiter
@@ -29,7 +28,6 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
-socketio = SocketIO(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Please log in to access this page."
@@ -53,21 +51,19 @@ Talisman(app,
     force_https=True 
 )
 
-# Session configuration
 app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=60)
 )
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 
 @app.before_first_request
 def create_tables():
     db.create_all()
     
-    # Create upload directory if it doesn't exist
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -136,13 +132,11 @@ def is_password_strong(password):
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Get form data
         username = request.form.get('username').strip()
         email = request.form.get('email').strip()
         password = request.form.get('password')
         profile_pic = request.files.get('profile_pic')
 
-        # Validation
         if len(username) < 3 or ' ' in username:
             flash('Username must be at least 3 characters long and cannot contain spaces.', 'warning')
             return redirect(url_for('register'))
@@ -159,18 +153,15 @@ def register():
             flash('Username already exists.', 'warning')
             return redirect(url_for('register'))
 
-        # Create a new user instance
         new_user = User(username=username, email=email)
-        new_user.set_password(password)  # Ensure you have this method in your User model
+        new_user.set_password(password)  
 
-        # Handle profile picture upload
         if profile_pic:
             filename = secure_filename(profile_pic.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             profile_pic.save(file_path)
             new_user.profile_pic = f'{filename}'
 
-        # Add to database
         try:
             db.session.add(new_user)
             db.session.commit()
@@ -198,8 +189,7 @@ def login():
                 flash("Your account has been banned. Please contact support.", "danger")
                 return redirect(url_for('login'))
 
-            # Log in the user
-            login_user(user, remember=True)  # Set `remember=True` for persistent sessions
+            login_user(user, remember=True)  
             app.logger.info(f"Login successful for user: {user.username}")
             flash('Login successful.', 'success')
             return redirect(url_for('index'))
@@ -302,7 +292,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_admin:
-            abort(403)  # Forbidden
+            abort(403)  
         return f(*args, **kwargs)
     return decorated_function
 
@@ -313,7 +303,6 @@ def admin_dashboard():
         flash("Access denied. Admins only.", "danger")
         return redirect(url_for('index'))
 
-    # Fetch data for the admin dashboard
     total_users = User.query.count()
     total_posts = Post.query.count()
     flagged_posts_count = Report.query.filter_by(report_type='post').count()
@@ -367,7 +356,7 @@ def toggle_admin(user_id):
 @admin_required
 def ban_user(user_id):
     user = User.query.get_or_404(user_id)
-    user.is_banned = not user.is_banned  # Add an `is_banned` column in the `User` model
+    user.is_banned = not user.is_banned  
     db.session.commit()
     flash(f"User {'banned' if user.is_banned else 'unbanned'} successfully.", "success")
     return redirect(url_for('admin_dashboard'))
@@ -483,7 +472,6 @@ def submit_report():
         flash("Please provide all required fields.", "danger")
         return redirect(request.referrer)
 
-    # Create a new report
     report = Report(
         report_type=report_type,
         reason=report_reason,
@@ -492,7 +480,6 @@ def submit_report():
         reporter_id=current_user.id
     )
 
-    # Add to database
     db.session.add(report)
     db.session.commit()
 
@@ -777,7 +764,6 @@ def is_valid_image(file_path):
 @login_required
 def settings():
     if request.method == 'POST':
-        # Get form data
         bio = request.form.get('bio', '').strip()
         profile_pic = request.files.get('profile_pic')
         profile_visibility = request.form.get('profile_visibility')
@@ -785,26 +771,22 @@ def settings():
         comment_permission = request.form.get('comment_permission')
         post_visibility = request.form.get('post_visibility')
 
-        # Update bio and visibility settings
         current_user.bio = bio
         current_user.profile_visibility = profile_visibility
         current_user.allow_comments = allow_comments
         current_user.comment_permission = comment_permission
         current_user.post_visibility = post_visibility
 
-        # Handle profile picture upload
         if profile_pic and allowed_file(profile_pic.filename):
             try:
-                # Generate secure filename and save the file
                 filename = secure_filename(profile_pic.filename)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 profile_pic.save(file_path)
 
-                # Validate the uploaded image
                 if is_valid_image(file_path):
                     current_user.profile_pic = filename
                 else:
-                    os.remove(file_path)  # Remove invalid file
+                    os.remove(file_path)
                     flash('Invalid image type. Please upload PNG, JPG, JPEG, or GIF.', 'danger')
                     return redirect(url_for('settings'))
             except Exception as e:
@@ -815,7 +797,6 @@ def settings():
             flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
             return redirect(url_for('settings'))
 
-        # Commit changes to database
         try:
             db.session.commit()
             flash("Settings updated successfully!", "success")
@@ -848,7 +829,7 @@ def update_profile():
 
     return render_template('update_profile.html', user=current_user)
 
-@app.errorhandler(429)  # Too Many Requests
+@app.errorhandler(429)
 def ratelimit_handler(e):
     return render_template('error.html', 
         error="Rate limit exceeded. Please try again later.",
@@ -857,4 +838,4 @@ def ratelimit_handler(e):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.0.77', port=5001)
+    app.run(debug=True, host='localhost', port=5001)

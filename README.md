@@ -1,133 +1,138 @@
-# Skillhub
+# Info til lærer
+### Messaging system tok veldig mye tid og funker men ikke skikkelig, du kan sende meldingen til hverandre men du må refreshe, jeg prøvde å bruke socketIO men det ble alt for mye styr.
+### På profilen til folk kan du se at following system har blitt ødelagt og du ikke kan trykke message fra der, for å sende melding til en person som du følger burde du gå lenger bak i repo-et og sjekke en der det ser ut som det funker. For å sende melding til folk må du gå til /messages/user_id til bruker.
 
-Skillhub is a social platform built with Flask and MySQL where users can showcase their skills, follow each other, create posts with images or videos, like and comment on posts, send direct messages, and receive notifications about likes, follows, and messages. Its user-friendly interface and minimalistic design offer a seamless experience for connecting and sharing.
+## Oppsummering alt ble drit etter at jeg måtte begynne å legge til det lille ekstra og sikkerhets tiltak til websiden.
+
+# SkillHub
+
+**SkillHub** is a Flask-based social platform that allows users to create posts, follow others, send messages, and manage their profiles. It includes functionalities for user registration, login, profile management, posting, commenting, following, liking posts, reporting content, and real-time messaging.
 
 ## Features
 
-- **User Registration & Login:**  
-  Create an account, log in, and manage your profile.
-
-- **Profiles & Skills:**  
-  Each user has a profile page displaying their profile picture, bio, skills, follower/following counts, and posts. Users can add new skills to their profile.
-
-- **Posts (Images & Videos):**  
-  Users can create posts with images or videos to show off their talents. Other users can view posts on the main feed or the profile of the user who created them.
-
-- **Follow System:**  
-  Users can follow others to see their posts in the main feed. Mutual following makes them "friends."
-
-- **Likes & Comments:**  
-  Engage with posts by liking and commenting. Post owners can delete their own posts, and comment authors can remove their comments.
-
-- **Private Messaging:**  
-  Users who follow someone can send up to 3 private messages. If the follow becomes mutual, both become "friends" and can message each other without limits.
-
-- **Notifications:**  
-  Users receive notifications when someone follows them, likes their post, or sends them a message. Unread notifications are highlighted, and users can mark them as read.
+- **User Registration & Authentication**: Users can register with a Gmail address, securely log in, and manage their sessions.
+- **Profile Management**: Users can update their bios, profile pictures, and set privacy preferences.
+- **Posts & Media**: Users can create text posts, upload images or videos, and view a feed of recent or popular posts.
+- **Likes & Comments**: Users can like posts, leave comments, and interact with the community.
+- **Follow & Unfollow**: Users can follow other users to see their posts and start chats.
+- **Messaging**: Users can send direct messages to people they follow. A real-time chat interface allows for a live messaging experience.
+- **Admin Dashboard**: An admin user can manage reports, ban/unban users, toggle admin status, and delete flagged posts.
+- **Reporting**: Users can report content or other users for review by admins.
+- **Notifications**: Users receive notifications for likes, follows, and more.
+- **Security & Rate Limiting**: Implemented rate limits on certain actions, enforced HTTPS, and safe session handling.
 
 ## Tech Stack
 
-- **Backend:**  
-  - [Flask](https://flask.palletsprojects.com/) (Python)
-  - [Flask-Login](https://flask-login.readthedocs.io/) for authentication
-  - [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/) as the ORM
-
-- **Database:**  
-  - MySQL (accessed via [PyMySQL](https://pypi.org/project/PyMySQL/))
-
-- **Frontend:**  
-  - Jinja2 templates
-  - [Bootstrap 5](https://getbootstrap.com/) for styling
-  - Custom CSS and JS as needed
-
-- **File Handling:**  
-  - Flask built-in functionalities for image/video uploads and serving static files
+- **Backend**: Flask for the web framework.
+- **Database**: SQLAlchemy ORM with support for relational databases (e.g., SQLite, PostgreSQL, MySQL).
+- **Real-time Messaging**: [Flask-SocketIO](https://flask-socketio.readthedocs.io/) and Socket.IO for live updates.
+- **Authentication**: [Flask-Login](https://flask-login.readthedocs.io/) for user login management.
+- **Migrations**: [Flask-Migrate](https://flask-migrate.readthedocs.io/) for handling database schema changes.
+- **Rate Limiting**: [Flask-Limiter](https://flask-limiter.readthedocs.io/) to prevent abuse.
+- **Security**: [Flask-Talisman](https://github.com/GoogleCloudPlatform/flask-talisman) to enforce HTTPS and secure headers.
 
 ## Getting Started
 
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/yourusername/skillhub.git
-   cd skillhub
+### Prerequisites
 
-# 2. Installing Dependencies
+- Python 3.9+ recommended
+- [pip](https://pip.pypa.io/en/stable/) package manager
+- A supported database (SQLite, PostgreSQL, MySQL)
 
-To install all the required dependencies for the project, run the following command in your terminal:
+### Installation
 
-```bash
-pip install -r requirements.txt
-```
+1. **Clone the repository**:
+    
+    bash
+    
+    Copy code
+    
+    `git clone https://github.com/yourusername/SkillHub.git cd SkillHub`
+    
+2. **Create and activate a virtual environment**:
+    
+    bash
+    
+    Copy code
+    
+    `python3 -m venv venv source venv/bin/activate`
+    
+    _(On Windows: `venv\Scripts\activate`)_
+    
+3. **Install dependencies**:
+    
+    bash
+    
+    Copy code
+    
+    `pip install -r requirements.txt`
+    
+4. **Set up the database**:
+    
+    - Modify `config.py` to point to your chosen database.
+    - Run migrations (if any):
+        
+        bash
+        
+        Copy code
+        
+        `flask db upgrade`
+        
+5. **Run the app**:
+    
+    bash
+    
+    Copy code
+    
+    `flask run`
+    
+    By default, the app runs at `http://127.0.0.1:5000`.
+    
 
-# 3. Setup and Configuration
+### Environment Variables
 
-## Set Up the Database in MySQL
+You can configure environment variables in `config.py` or via the OS environment for database URIs, secret keys, and other sensitive settings.
 
-Run the following SQL commands in your MySQL environment:
+### File Structure
 
-```sql
-CREATE DATABASE skillhub_db;
-CREATE USER 'skillhub_user'@'localhost' IDENTIFIED BY 'password123';
-GRANT ALL PRIVILEGES ON skillhub_db.* TO 'skillhub_user'@'localhost';
-FLUSH PRIVILEGES;
-```
+- `app.py`: The main Flask application.
+- `config.py`: Configuration settings (database URL, secret keys, etc.).
+- `utils/database.py`: Database initialization.
+- `models/`: Contains SQLAlchemy models for Users, Posts, Comments, Likes, Follows, Messages, etc.
+- `templates/`: Jinja2 templates for HTML pages.
+- `static/`: CSS, JS, and image files.
+- `migrations/`: Database migration scripts (if using Flask-Migrate).
+- `requirements.txt`: Python dependencies.
 
-# 4. Running the application 
-## Run the following command in terminal
-```bash
-python app.py
-```
+## Usage
 
-# Project Structure
-## This is how you want your project folder to look like
-```arduino
-SkillHub/
-  models/
-    __init__.py
-    comment_model.py
-    follow_model.py
-    like_model.py
-    message_model.py
-    notification_model.py
-    post_model.py
-    skill_model.py
-    user_model.py
-  static/
-    css/
-      style.css
-    images/
-      hero-bg.jpg
-    js/
-      script.js
-    uploads/
-    videos/
-  templates/
-    partials/
-      chat_box.html
-    base.html
-    followers.html
-    following.html
-    index.html
-    login.html
-    messages_with_user.html
-    messages.html
-    notifications.html
-    profile.html
-    register.html
-    settings.html
-    skill_form.html
-    update_profile.html
-    upload.html
-  utils/
-  .gitignore
-  app.py
-  config.py
-  requirements.txt
-  README.md
+- **Register/Login**: Create an account, then log in to start browsing posts and interacting with other users.
+- **Profile Management**: Update profile settings, upload a profile picture, add skills.
+- **Create Posts**: Share text, images, or videos. Comment on and like other users’ posts.
+- **Follow & Message**: Follow other users and start private conversations in real-time chat.
+- **Report & Admin**: Report problematic content. Admins can review reports, ban/unban users, and manage flagged content.
 
-```
+## Contributing
 
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix:
+    
+    bash
+    
+    Copy code
+    
+    `git checkout -b feature-name`
+    
+3. Commit your changes and push them to GitHub:
+    
+    bash
+    
+    Copy code
+    
+    `git commit -m "Add new feature" git push origin feature-name`
+    
+4. Create a Pull Request on the main repository.
 
+## License
 
-
-
-
+This project is licensed under the MIT License.
