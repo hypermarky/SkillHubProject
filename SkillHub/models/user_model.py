@@ -6,6 +6,12 @@ from models.like_model import Like
 from itsdangerous import URLSafeTimedSerializer
 import datetime
 
+followers = db.Table(
+    'followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('followed_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -13,6 +19,17 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(300), nullable=False)
     bio = db.Column(db.Text, nullable=True)
+    
+    # Now this relationship will work since 'followers' is defined above
+    followed = db.relationship(
+        'User',
+        secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        backref=db.backref('followed_by', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
     profile_pic = db.Column(db.String(255), nullable=True, default='static/images/mark.jpeg')
     profile_visibility = db.Column(db.String(50), default='public')
     allow_comments = db.Column(db.Boolean, default=True)
@@ -26,7 +43,6 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"<User {self.username}>"
-
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -61,16 +77,18 @@ class User(UserMixin, db.Model):
             db.session.commit()
 
     def get_followers(self):
-        # Users who follow this user
-        return [f.follower for f in self.followers]
+        return [f for f in self.followed_by]
+
+
 
     def get_following(self):
         # Users this user is following
-        return [f.followed for f in self.following]
+        # If you have a 'following' relationship, define it similar to 'followers' 
+        # or just query Follow directly.
+        return Follow.query.filter_by(follower_id=self.id).all()
 
     def is_friends_with(self, other_user):
         if not other_user:
             return False
         # Both follow each other
         return self.is_following(other_user) and other_user.is_following(self)
-    

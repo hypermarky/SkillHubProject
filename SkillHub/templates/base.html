@@ -25,7 +25,9 @@
                 <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}"><img src="{{ url_for('static', filename='images/user.png') }}" alt="Profile" width="16" height="16"></a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('messages') }}"><img src="{{ url_for('static', filename='images/message-circle-more.png') }}" alt="Messages" width="16" height="16"></a>
+                <a class="nav-link" href="{{ url_for('messages') }}">
+                  <img src="{{ url_for('static', filename='images/message-circle-more.png') }}" alt="Messages" width="16" height="16">
+              </a>              
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('upload') }}"><img src="{{ url_for('static', filename='images/square-plus.png') }}" alt="Upload" width="16" height="16"></a>

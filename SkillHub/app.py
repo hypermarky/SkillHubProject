@@ -39,7 +39,7 @@ login_manager.login_message_category = "info"
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["200 per day", "100 per hour"],
     storage_uri="memory://"
 )
 Talisman(app,
@@ -503,6 +503,7 @@ def submit_report():
 
 @app.route('/follow/<int:user_id>', methods=['POST'])
 @login_required
+@limiter.limit("30 per hour")
 def follow_user(user_id):
     user_to_follow = User.query.get_or_404(user_id)
     if user_to_follow.id == current_user.id:
@@ -637,9 +638,12 @@ def delete_comment(comment_id):
 @login_required
 def messages():
     chat_users = get_chat_users()
-    first_user = chat_users[0] if chat_users else None
-    conversation = []
 
+    followed_users = current_user.followed.all() if hasattr(current_user, 'followed') else []
+
+    first_user = chat_users[0] if chat_users else None
+
+    conversation = []
     if first_user:
         conversation = Message.query.filter(
             ((Message.sender_id == current_user.id) & (Message.receiver_id == first_user.id)) |
@@ -649,6 +653,7 @@ def messages():
     return render_template(
         'messages.html',
         chat_users=chat_users,
+        followed_users=followed_users,
         other_user=first_user,
         conversation=conversation
     )
@@ -852,4 +857,4 @@ def ratelimit_handler(e):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='localhost', port=5001)
+    app.run(debug=True, host='192.168.0.77', port=5001)

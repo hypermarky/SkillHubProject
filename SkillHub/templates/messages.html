@@ -2,11 +2,27 @@
 {% block content %}
 <div class="d-flex flex-wrap messages-page">
     <div class="users-list bg-light p-3" style="min-width: 250px; flex: 1;">
-        <h4 class="fw-bold">Chats</h4>
+        <h4 class="fw-bold">Followed Users</h4>
+        <ul class="list-group mb-3">
+            {% for user in followed_users %}
+            <li class="list-group-item d-flex align-items-center chat-tab" data-chat-user-id="{{ user.id }}">
+                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" 
+                     alt="Profile Picture" 
+                     class="chat-user-pic rounded-circle me-2" 
+                     style="width: 40px; height: 40px; object-fit: cover;">
+                <span class="chat-user-name">{{ user.username }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h4 class="fw-bold">Recent Chats</h4>
         <ul class="list-group">
             {% for user in chat_users %}
             <li class="list-group-item d-flex align-items-center chat-tab" data-chat-user-id="{{ user.id }}">
-                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" 
+                     alt="Profile Picture" 
+                     class="chat-user-pic rounded-circle me-2" 
+                     style="width: 40px; height: 40px; object-fit: cover;">
                 <span class="chat-user-name">{{ user.username }}</span>
             </li>
             {% endfor %}
@@ -20,74 +36,73 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatContent = document.getElementById("chatContent");
+        const chatTabs = document.querySelectorAll(".chat-tab");
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const chatContent = document.getElementById("chatContent");
-            const chatTabs = document.querySelectorAll(".chat-tab");
+        chatTabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                // Remove 'active' class from all tabs
+                chatTabs.forEach(t => t.classList.remove('active'));
+                // Add 'active' class to the clicked tab
+                tab.classList.add('active');
 
-            chatTabs.forEach(tab => {
-                tab.addEventListener("click", () => {
-                    // Remove 'active' class from all tabs
-                    chatTabs.forEach(t => t.classList.remove('active'));
-                    // Add 'active' class to the clicked tab
-                    tab.classList.add('active');
+                const userId = tab.dataset.chatUserId;
 
-                    const userId = tab.dataset.chatUserId;
+                fetch(`/messages/${userId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    chatContent.innerHTML = html;
 
-                    fetch(`/messages/${userId}`, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                        .then(response => response.text())
-                        .then(html => {
-                            chatContent.innerHTML = html;
-
-                            const chatMessages = document.getElementById("chat-messages");
-                            if (chatMessages) {
-                                chatMessages.scrollTop = chatMessages.scrollHeight;
-                            }
-                        })
-                        .catch(error => console.error("Error loading chat:", error));
-                });
-            });
-
-            document.addEventListener("submit", function (e) {
-                if (e.target && e.target.id === "message-form") {
-                    e.preventDefault(); 
-
-                    const form = e.target;
-                    fetch(form.action, {
-                        method: "POST",
-                        body: new FormData(form),
-                        headers: { "X-Requested-With": "XMLHttpRequest" }
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                alert(data.error); 
-                                return;
-                            }
-
-                            const chatMessages = document.getElementById("chat-messages");
-                            if (chatMessages) {
-                                const messageDiv = document.createElement("div");
-                                messageDiv.className = "message-container sent-message";
-                                messageDiv.innerHTML = `
-                                    <div class="message-content">
-                                        <p>${data.content}</p>
-                                        <span class="message-time">${data.timestamp}</span>
-                                    </div>
-                                `;
-                                chatMessages.appendChild(messageDiv);
-                                chatMessages.scrollTop = chatMessages.scrollHeight; 
-                            }
-
-                            form.reset();
-                        })
-                        .catch(error => console.error("Error sending message:", error));
-                }
+                    const chatMessages = document.getElementById("chat-messages");
+                    if (chatMessages) {
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                })
+                .catch(error => console.error("Error loading chat:", error));
             });
         });
-    </script>
 
+        // AJAX for sending messages
+        document.addEventListener("submit", function (e) {
+            if (e.target && e.target.id === "message-form") {
+                e.preventDefault();
+
+                const form = e.target;
+                fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    const chatMessages = document.getElementById("chat-messages");
+                    if (chatMessages) {
+                        const messageDiv = document.createElement("div");
+                        messageDiv.className = "message-container sent-message";
+                        messageDiv.innerHTML = `
+                            <div class="message-content">
+                                <p>${data.content}</p>
+                                <span class="message-time">${data.timestamp}</span>
+                            </div>
+                        `;
+                        chatMessages.appendChild(messageDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+
+                    form.reset();
+                })
+                .catch(error => console.error("Error sending message:", error));
+            }
+        });
+    });
+</script>
 {% endblock %}

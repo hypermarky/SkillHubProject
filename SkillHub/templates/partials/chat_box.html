@@ -1,38 +1,43 @@
-<div class="chat-header d-flex align-items-center border-bottom pb-2 mb-3">
-    <img src="{{ url_for('static', filename='uploads/' ~ other_user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic">
-    <h5>{{ other_user.username }}</h5>
-</div>
 <div class="chat-container">
-    <div class="chat-messages" id="chat-messages">
+    <div class="chat-header d-flex align-items-center border-bottom pb-2 mb-3">
+        <img src="{{ url_for('static', filename='uploads/' ~ other_user.profile_pic) }}" alt="Profile Picture" class="chat-user-pic rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+        <h5 class="mb-0">{{ other_user.username }}</h5>
+    </div>
+
+    <div id="chat-messages" class="chat-messages">
         {% for msg in conversation %}
-        <div class="message-container {% if msg.sender_id == current_user.id %}sent-message{% else %}received-message{% endif %}">
-            <div class="message-content">
-                <p>{{ msg.content }}</p>
-                <span class="message-time">{{ msg.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+            <div class="message-wrapper {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+                <div class="message-content">
+                    <p>{{ msg.content }}</p>
+                    <small class="message-time">{{ msg.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                </div>
             </div>
-        </div>
         {% endfor %}
     </div>
-    <div class="message-input-container">
-        <form id="message-form" action="{{ url_for('send_message', user_id=other_user.id) }}" method="POST">
-            <input type="text" name="message_content" placeholder="Type a message..." required>
-            <button type="submit">Send</button>
-        </form>
-    </div>
+
+    <form id="message-form" method="POST" action="{{ url_for('send_message', user_id=other_user.id) }}" class="message-input-form">
+        <textarea name="message_content" placeholder="Type your message..." required></textarea>
+        <button type="submit">Send</button>
+    </form>
 </div>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/chat_box.css') }}">
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const messageForm = document.getElementById('message-form');
+        const form = document.getElementById('message-form');
         const chatMessages = document.getElementById('chat-messages');
 
-        messageForm.addEventListener('submit', function(e) {
+        // Scroll to bottom on load
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            fetch(this.action, {
+            fetch(form.action, {
                 method: 'POST',
-                body: new FormData(this),
+                body: new FormData(form),
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -45,16 +50,16 @@
                 }
 
                 const messageDiv = document.createElement('div');
-                messageDiv.className = 'message-container sent-message';
+                messageDiv.className = 'message-wrapper sent';
                 messageDiv.innerHTML = `
                     <div class="message-content">
                         <p>${data.content}</p>
-                        <span class="message-time">${data.timestamp}</span>
+                        <small class="message-time">${data.timestamp}</small>
                     </div>
                 `;
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                messageForm.reset();
+                form.reset();
             })
             .catch(error => {
                 console.error('Error sending message:', error);
